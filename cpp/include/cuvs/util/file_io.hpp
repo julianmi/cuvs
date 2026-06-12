@@ -248,11 +248,33 @@ void read_large_file(const file_descriptor& fd,
  * @param data_ptr Source data buffer
  * @param total_bytes Total bytes to write
  * @param file_offset Starting offset in file
+ * @param drop_from_cache When true and the write is large, flush and evict the just-written range
+ *   from the page cache (see drop_file_range_from_cache). Defaults to false; only opt in for
+ *   write-once data that is not re-read soon, otherwise the eviction turns warm re-reads into cold
+ *   disk reads.
  */
 void write_large_file(const file_descriptor& fd,
                       const void* data_ptr,
                       const size_t total_bytes,
-                      const uint64_t file_offset);
+                      const uint64_t file_offset,
+                      bool drop_from_cache = false);
+
+/**
+ * @brief Flush a file range to stable storage and drop it from the page cache.
+ *
+ * Issues fdatasync (so the dirty pages become eligible for eviction) followed by
+ * POSIX_FADV_DONTNEED over [file_offset, file_offset + total_bytes). Best-effort: any failure is
+ * non-fatal and does not corrupt the file. Use once after writing a large, write-once artifact to
+ * keep the page cache small (e.g. to limit physical-memory fragmentation before a large host pin)
+ * without paying a full-file fdatasync per write.
+ *
+ * @param fd File descriptor
+ * @param file_offset Starting offset of the range to evict
+ * @param total_bytes Number of bytes to evict
+ */
+void drop_file_range_from_cache(const file_descriptor& fd,
+                                const uint64_t file_offset,
+                                const size_t total_bytes);
 
 /**
  * @brief Buffered output stream wrapper

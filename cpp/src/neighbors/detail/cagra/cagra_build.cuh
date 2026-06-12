@@ -568,8 +568,11 @@ void ace_reorder_and_store_dataset(
         (core_partition_starts(partition_id) + core_partition_current(partition_id)) * vector_size +
         reordered_header_size;
 
-      cuvs::util::write_large_file(
-        reordered_fd, core_buffers[partition_id].data_handle(), bytes_to_write, file_offset);
+      cuvs::util::write_large_file(reordered_fd,
+                                   core_buffers[partition_id].data_handle(),
+                                   bytes_to_write,
+                                   file_offset,
+                                   /*drop_from_cache=*/true);
 
       core_partition_current(partition_id) += count;
       core_buffer_counts(partition_id) = 0;
@@ -585,8 +588,11 @@ void ace_reorder_and_store_dataset(
           vector_size +
         augmented_header_size;
 
-      cuvs::util::write_large_file(
-        augmented_fd, augmented_buffers[partition_id].data_handle(), bytes_to_write, file_offset);
+      cuvs::util::write_large_file(augmented_fd,
+                                   augmented_buffers[partition_id].data_handle(),
+                                   bytes_to_write,
+                                   file_offset,
+                                   /*drop_from_cache=*/true);
 
       augmented_partition_current(partition_id) += count;
       augmented_buffer_counts(partition_id) = 0;
@@ -650,8 +656,11 @@ void ace_reorder_and_store_dataset(
   }
 
   const size_t mapping_file_size = dataset_size * sizeof(IdxT);
-  cuvs::util::write_large_file(
-    mapping_fd, core_backward_mapping.data_handle(), mapping_file_size, mapping_header_size);
+  cuvs::util::write_large_file(mapping_fd,
+                               core_backward_mapping.data_handle(),
+                               mapping_file_size,
+                               mapping_header_size,
+                               /*drop_from_cache=*/true);
 
   auto end        = std::chrono::high_resolution_clock::now();
   auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -1427,8 +1436,11 @@ index<T, IdxT> build_ace(raft::resources const& res,
           static_cast<size_t>(core_partition_offsets(partition_id)) * graph_degree * sizeof(IdxT) +
           graph_header_size;
         const size_t graph_bytes = core_sub_dataset_size * graph_degree * sizeof(IdxT);
-        cuvs::util::write_large_file(
-          graph_fd, sub_search_graph.data_handle(), graph_bytes, graph_offset);
+        cuvs::util::write_large_file(graph_fd,
+                                     sub_search_graph.data_handle(),
+                                     graph_bytes,
+                                     graph_offset,
+                                     /*drop_from_cache=*/true);
       }
 
       auto end = std::chrono::high_resolution_clock::now();
